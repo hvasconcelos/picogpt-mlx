@@ -1,0 +1,10 @@
+[project]
+name = "tiny-gpt-mlx"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "mlx>=0.31.2",
+    "numpy>=2.4.4",
+]
