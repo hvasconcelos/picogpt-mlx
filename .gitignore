@@ -12,3 +12,6 @@ wheels/
 # Large training corpora
 input.txt
 *.gz
+
+# Trained tokenizer artifacts
+pt-bpe.json

@@ -75,7 +75,7 @@ class Block(nn.Module):
 
 class GPT(nn.Module):
     def __init__(self, vocab_size: int, block_size: int = 128,
-                 n_layer: int = 4, n_head: int = 4, d_model: int = 128):
+                 n_layer: int = 6, n_head: int = 8, d_model: int = 256):
         """
         Initializes a GPT module.
 
@@ -106,8 +106,7 @@ class GPT(nn.Module):
         self.blocks = [Block(d_model, n_head) for _ in range(n_layer)]
         # Initialize the layer normalization for the final output.
         self.ln_f = nn.LayerNorm(d_model)
-        # Initialize the linear layer for the final output.
-        self.head = nn.Linear(d_model, vocab_size, bias=False)
+        # No separate LM head: weights are tied to tok_emb via as_linear (see __call__).
 
     def __call__(self, idx: mx.array) -> mx.array:
         """
@@ -128,8 +127,8 @@ class GPT(nn.Module):
             x = blk(x)
         # Apply the layer normalization for the final output.
         x = self.ln_f(x)
-        # Apply the linear layer for the final output.
-        return self.head(x)                                  # [B, T, vocab]
+        # Tied LM head: project back to vocab using the input embedding's weights.
+        return self.tok_emb.as_linear(x)                     # [B, T, vocab]
 
     def generate(self, idx: mx.array, max_new: int, temperature: float = 1.0):
         """

@@ -51,8 +51,14 @@ def loss_fn(model: GPT, x: mx.array, y: mx.array) -> mx.array:
 
 
 def train(model: GPT, train_ids: mx.array, val_ids: mx.array,
-          steps: int = 3000, batch_size: int = 32, lr: float = 3e-4):
-    optimizer = optim.AdamW(learning_rate=lr)
+          steps: int = 3000, batch_size: int = 32, lr: float = 3e-4,
+          warmup_steps: int = 200, min_lr_ratio: float = 0.1):
+    # Linear warmup from 0 → lr, then cosine decay from lr → lr * min_lr_ratio.
+    warmup = optim.linear_schedule(0.0, lr, steps=warmup_steps)
+    cosine = optim.cosine_decay(lr, decay_steps=max(steps - warmup_steps, 1),
+                                end=lr * min_lr_ratio)
+    schedule = optim.join_schedules([warmup, cosine], [warmup_steps])
+    optimizer = optim.AdamW(learning_rate=schedule)
     loss_and_grad_fn = nn.value_and_grad(model, loss_fn)
 
     state = [model.state, optimizer.state]
@@ -76,5 +82,7 @@ def train(model: GPT, train_ids: mx.array, val_ids: mx.array,
             val = loss_fn(model, xv, yv)
             mx.eval(val)
             elapsed = time.perf_counter() - tic
+            current_lr = optimizer.learning_rate.item()
             print(f"step {it:>4}  train {loss.item():.4f}  "
-                  f"val {val.item():.4f}  ({elapsed:.1f}s)")
+                  f"val {val.item():.4f}  lr {current_lr:.2e}  "
+                  f"({elapsed:.1f}s)")
