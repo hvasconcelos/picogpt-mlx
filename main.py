@@ -51,13 +51,13 @@ def main():
 
     # Train the model.
     print("Training the model...")
-    train(model, train_ids, val_ids, steps=3000)
+    train(model, train_ids, val_ids, steps=10000)
     print("Training complete.")
 
     # Generate a sample
     print("\n--- sample ---")
     seed = mx.array([[tok.stoi["\n"]]])
-    out = model.generate(seed, max_new=500)
+    out = model.generate("Qual é a capital de Portugal?", max_new=300)
     mx.eval(out)
     ids = out[0].tolist()
     print(f"Generated text: {tok.decode(ids)}")

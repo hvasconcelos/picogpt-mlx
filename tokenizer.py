@@ -1,23 +1,40 @@
+from pathlib import Path
 
-import mlx.core as mx
-import mlx.nn as nn
-import mlx.optimizers as optim
+from tokenizers import ByteLevelBPETokenizer, Tokenizer as HFTokenizer
 
-# ------------------------------------------------------------
-# Tokenizer
-# ------------------------------------------------------------
-class CharTokenizer:
-    def __init__(self, text: str):
-        self.vocab = sorted(set(text))
-        self.stoi = {c: i for i, c in enumerate(self.vocab)}
-        self.itos = {i: c for i, c in enumerate(self.vocab)}
+DEFAULT_PATH = "pt-bpe.json"
+
+
+class Tokenizer:
+    """Byte-level BPE tokenizer trained on the local corpus."""
+
+    def __init__(self, path: str = DEFAULT_PATH):
+        self._tok = HFTokenizer.from_file(path)
 
     @property
     def vocab_size(self) -> int:
-        return len(self.vocab)
+        return self._tok.get_vocab_size()
 
     def encode(self, s: str) -> list[int]:
-        return [self.stoi[c] for c in s]
+        return self._tok.encode(s).ids
 
     def decode(self, ids: list[int]) -> str:
-        return "".join(self.itos[i] for i in ids)
+        return self._tok.decode(ids)
+
+    @classmethod
+    def train(cls, files: list[str], vocab_size: int = 16000,
+              save_path: str = DEFAULT_PATH) -> "Tokenizer":
+        bpe = ByteLevelBPETokenizer()
+        bpe.train(files=files, vocab_size=vocab_size, min_frequency=2,
+                  special_tokens=["<|endoftext|>"])
+        bpe.save(save_path)
+        return cls(save_path)
+
+    @classmethod
+    def load_or_train(cls, corpus_path: str, vocab_size: int = 16000,
+                      save_path: str = DEFAULT_PATH) -> "Tokenizer":
+        if Path(save_path).exists():
+            return cls(save_path)
+        print(f"Training {vocab_size}-vocab BPE on {corpus_path}...")
+        return cls.train([corpus_path], vocab_size=vocab_size,
+                         save_path=save_path)

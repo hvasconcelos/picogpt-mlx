@@ -1,3 +1,4 @@
+
 import mlx.core as mx
 import mlx.nn as nn
 from attention import CausalSelfAttention
@@ -78,12 +79,18 @@ class GPT(nn.Module):
         """
         Initializes a GPT module.
 
-        GPT is a GPT module that implements the GPT mechanism. It is used to model the dependencies
-        between tokens in a sequence.
+        The `block_size` parameter here specifies the context window size, i.e., the maximum number of tokens
+        the model can consider at once during both training and generation. It determines how many previous tokens
+        the model can use to predict the next token.
+
+        The `n_layer` parameter determines the number of transformer blocks stacked in the model.
+        Each block consists of a layer of self-attention and a feed-forward network. Increasing `n_layer`
+        typically allows the model to capture more complex relationships in the data, as the input is processed
+        through more layers of nonlinear transformations and attention mechanisms.
 
         Args:
             vocab_size (int): The size of the vocabulary.
-            block_size (int): The size of the block.
+            block_size (int): The context window size (maximum number of tokens per sequence).
             n_layer (int): The number of layers.
             n_head (int): The number of attention heads (H).
             d_model (int): The dimension of the model.
@@ -124,7 +131,7 @@ class GPT(nn.Module):
         # Apply the linear layer for the final output.
         return self.head(x)                                  # [B, T, vocab]
 
-    def     generate(self, idx: mx.array, max_new: int, temperature: float = 1.0):
+    def generate(self, idx: mx.array, max_new: int, temperature: float = 1.0):
         """
         Generates a sequence of tokens from the GPT module.
 
@@ -139,3 +146,14 @@ class GPT(nn.Module):
             next_id = mx.random.categorical(logits)          # [B]
             idx = mx.concatenate([idx, next_id[:, None]], axis=1)
         return idx
+
+    def num_parameters(self) -> int:
+        """
+        Returns the number of trainable parameters (weights) in the model.
+
+        Returns:
+            int: Number of weights in the model.
+        """
+        from mlx.utils import tree_flatten
+        params = tree_flatten(self.parameters())
+        return sum(p.size for _, p in params)
