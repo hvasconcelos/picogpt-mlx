@@ -19,14 +19,14 @@ def load_data(path: str = "input.txt") -> tuple[Tokenizer, mx.array, mx.array]:
 
     Returns:
         tuple:
-            - Tokenizer object (16k byte-level BPE trained on the corpus)
+            - Tokenizer object (pretrained GPT-2 BPE, 50,257 vocab)
             - mx.array of token ids for training (first 90%)
             - mx.array of token ids for validation (last 10%)
     """
     # Read the entire text file as a single string.
     text = Path(path).read_text(encoding="utf-8")
-    # Train (or load) a 16k byte-level BPE on the corpus.
-    tok = Tokenizer.load_or_train(path, vocab_size=16000)
+    # Pretrained GPT-2 BPE — no training step.
+    tok = Tokenizer()
     # Encode the text into a list of integer token IDs, then into an MX array.
     ids = mx.array(tok.encode(text), dtype=mx.int32)
     # Split 90% train / 10% validation.
@@ -45,9 +45,13 @@ def main():
     model = GPT(vocab_size=tok.vocab_size)
     mx.eval(model.parameters())   # force lazy init to actually allocate
 
+    # bf16 mixed precision: halve weight/grad/optimizer-state memory and
+    # speed up matmuls on Apple Silicon. Loss is computed in fp32 in train.py.
+    model.set_dtype(mx.bfloat16)
+
     n_params = sum(p.size for _, p in
                    tree_flatten(model.parameters()))
-    print(f"params: {n_params:,}")
+    print(f"params: {n_params:,}  dtype: {model.tok_emb.weight.dtype}")
 
     # Train the model.
     print("Training the model...")
@@ -56,7 +60,7 @@ def main():
 
     # Generate a sample
     print("\n--- sample ---")
-    prompt = "Qual é a capital de Portugal?"
+    prompt = "ROMEO:"
     prompt_ids = mx.array([tok.encode(prompt)], dtype=mx.int32)
     out = model.generate(prompt_ids, max_new=300)
     mx.eval(out)

@@ -42,7 +42,9 @@ def get_batch(data: mx.array, batch_size: int, block_size: int):
 # Training
 # ------------------------------------------------------------
 def loss_fn(model: GPT, x: mx.array, y: mx.array) -> mx.array:
-    logits = model(x)                                        # [B, T, V]
+    # Forward in the model's dtype (bf16 with mixed precision); cast logits to
+    # fp32 before cross-entropy for numerical stability of the log-softmax.
+    logits = model(x).astype(mx.float32)                     # [B, T, V]
     return nn.losses.cross_entropy(
         logits.reshape(-1, logits.shape[-1]),
         y.reshape(-1),

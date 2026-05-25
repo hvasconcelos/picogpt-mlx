@@ -74,8 +74,8 @@ class Block(nn.Module):
 
 
 class GPT(nn.Module):
-    def __init__(self, vocab_size: int, block_size: int = 128,
-                 n_layer: int = 6, n_head: int = 8, d_model: int = 256):
+    def __init__(self, vocab_size: int, block_size: int = 256,
+                 n_layer: int = 6, n_head: int = 8, d_model: int = 384):
         """
         Initializes a GPT module.
 

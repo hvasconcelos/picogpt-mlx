@@ -1,40 +1,23 @@
-from pathlib import Path
+import tiktoken
 
-from tokenizers import ByteLevelBPETokenizer, Tokenizer as HFTokenizer
-
-DEFAULT_PATH = "pt-bpe.json"
+# Pretrained GPT-2 byte-level BPE (50,257 tokens). "<|endoftext|>" is id 50256.
+_ENCODING = "gpt2"
 
 
 class Tokenizer:
-    """Byte-level BPE tokenizer trained on the local corpus."""
+    """Pretrained GPT-2 byte-level BPE (via tiktoken)."""
 
-    def __init__(self, path: str = DEFAULT_PATH):
-        self._tok = HFTokenizer.from_file(path)
+    def __init__(self) -> None:
+        self._tok = tiktoken.get_encoding(_ENCODING)
 
     @property
     def vocab_size(self) -> int:
-        return self._tok.get_vocab_size()
+        return self._tok.n_vocab
 
     def encode(self, s: str) -> list[int]:
-        return self._tok.encode(s).ids
+        # allowed_special="all" so a literal "<|endoftext|>" encodes to its
+        # special id instead of raising. Safe for a single-corpus run.
+        return self._tok.encode(s, allowed_special="all")
 
     def decode(self, ids: list[int]) -> str:
         return self._tok.decode(ids)
-
-    @classmethod
-    def train(cls, files: list[str], vocab_size: int = 16000,
-              save_path: str = DEFAULT_PATH) -> "Tokenizer":
-        bpe = ByteLevelBPETokenizer()
-        bpe.train(files=files, vocab_size=vocab_size, min_frequency=2,
-                  special_tokens=["<|endoftext|>"])
-        bpe.save(save_path)
-        return cls(save_path)
-
-    @classmethod
-    def load_or_train(cls, corpus_path: str, vocab_size: int = 16000,
-                      save_path: str = DEFAULT_PATH) -> "Tokenizer":
-        if Path(save_path).exists():
-            return cls(save_path)
-        print(f"Training {vocab_size}-vocab BPE on {corpus_path}...")
-        return cls.train([corpus_path], vocab_size=vocab_size,
-                         save_path=save_path)
