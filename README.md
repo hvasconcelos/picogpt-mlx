@@ -1,4 +1,4 @@
-# tiny-gpt-mlx ⚡️
+# picogpt-mlx ⚡️
 
 A minimal, from-scratch GPT implementation in [MLX](https://github.com/ml-explore/mlx) — Apple's array framework for Apple Silicon. The whole model, tokenizer, and training loop live in **under 400 lines of Python** across five files, and the model trains on Tiny Shakespeare on a MacBook in a few minutes.
 
@@ -78,7 +78,7 @@ uv run python main.py
 You'll see something like:
 
 ```
-Hello from tiny-gpt-mlx .... lets go ⚡️
+Hello from picogpt-mlx .... lets go ⚡️
 vocab size: 50257, train tokens: 301966
 params: 29,945,856  dtype: mlx.core.bfloat16
 Training the model...

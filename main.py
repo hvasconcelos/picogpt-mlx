@@ -38,7 +38,7 @@ def main():
     """
     Main entry point: loads data, prints summary statistics, and samples a batch.
     """
-    print("Hello from tiny-gpt-mlx .... lets go ⚡️")
+    print("Hello from picogpt-mlx .... lets go ⚡️")
     tok, train_ids, val_ids = load_data("input.txt")
     print(f"vocab size: {tok.vocab_size}, train tokens: {train_ids.size}")
 

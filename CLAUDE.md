@@ -57,6 +57,6 @@ These bite if you're coming from PyTorch:
 
 ## Repo notes
 
-- Git remote is `hvasconcelos/picogpt-mlx` on GitHub, but the local project name in `pyproject.toml` is `tiny-gpt-mlx`. Don't "fix" this without asking — it may be intentional.
+- Git remote: `hvasconcelos/picogpt-mlx` on GitHub.
 - Default branch is `master` (not `main`).
 - `LLM.md` is a prose architecture overview written for humans; it does not need to stay in sync with code changes line-by-line, but keep the high-level flow accurate.
