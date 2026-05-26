@@ -23,6 +23,8 @@ Heavily inspired by Andrej Karpathy's [**nanoGPT**](https://github.com/karpathy/
 
 ## Architecture
 
+> 📐 **Animated diagram:** [`docs/architecture.html`](docs/architecture.html) — a self-contained HTML walkthrough of the forward pass with one Block opened up (fused QKV, causal mask, tied LM head). Clone the repo and open the file in a browser.
+
 A textbook decoder-only Transformer:
 
 | Component               | Choice                                          |
