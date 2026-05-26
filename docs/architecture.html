@@ -1,0 +1,1099 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>picogpt-mlx — architecture</title>
+<style>
+  /* -----------------------------------------------------------------------
+     picogpt-mlx — architecture, drawn as a technical illustration.
+     Palette: warm paper + ink, single accent (ember). System fonts only.
+     ----------------------------------------------------------------------- */
+
+  :root {
+    --paper:        #efe8d8;     /* warm off-white */
+    --paper-deep:   #e6dec9;     /* slightly recessed */
+    --ink:          #14140e;     /* near-black, warm */
+    --ink-2:        #2a2a20;
+    --ink-3:        #5a5a4d;
+    --ink-4:        #8b8775;     /* faded ink for rules */
+    --rule:         #c7bfac;
+    --accent:       #c4441f;     /* ember red */
+    --accent-soft:  #e89270;
+    --accent-glow:  rgba(196,68,31,.18);
+    --grid:         rgba(20,20,14,.045);
+
+    --serif: "Iowan Old Style","Palatino Linotype","Palatino","Cambria","Georgia",ui-serif,serif;
+    --sans:  ui-sans-serif,-apple-system,"Helvetica Neue","Helvetica","Arial",sans-serif;
+    --mono:  "JetBrains Mono","SF Mono","Menlo","Consolas",ui-monospace,monospace;
+  }
+
+  *,*::before,*::after { box-sizing: border-box; }
+
+  html, body {
+    margin: 0;
+    padding: 0;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: var(--serif);
+    font-size: 15px;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* faint engineering-paper grid */
+  body {
+    background-image:
+      linear-gradient(var(--grid) 1px, transparent 1px),
+      linear-gradient(90deg, var(--grid) 1px, transparent 1px);
+    background-size: 28px 28px, 28px 28px;
+    background-position: -1px -1px;
+  }
+
+  .wrap {
+    max-width: 1500px;
+    margin: 0 auto;
+    padding: 56px 48px 96px;
+  }
+
+  /* ---------- masthead ---------- */
+  .mast {
+    border-top: 2px solid var(--ink);
+    border-bottom: 1px solid var(--ink);
+    padding: 18px 0 22px;
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 24px;
+    align-items: end;
+  }
+  .mast .left .eyebrow {
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: .22em;
+    text-transform: uppercase;
+    color: var(--ink-3);
+    margin: 0 0 10px;
+  }
+  .mast h1 {
+    font-family: var(--serif);
+    font-weight: 500;
+    font-style: italic;
+    font-size: clamp(34px, 4.6vw, 58px);
+    line-height: 1.02;
+    letter-spacing: -.01em;
+    margin: 0 0 6px;
+  }
+  .mast h1 .amp { color: var(--accent); font-style: normal; }
+  .mast .sub {
+    font-family: var(--serif);
+    font-size: 17px;
+    color: var(--ink-2);
+    max-width: 62ch;
+    margin: 4px 0 0;
+  }
+  .mast .right {
+    text-align: right;
+    font-family: var(--mono);
+    font-size: 11px;
+    line-height: 1.7;
+    color: var(--ink-3);
+    letter-spacing: .04em;
+  }
+  .mast .right .k { color: var(--ink); }
+  .mast .right .accent { color: var(--accent); }
+
+  /* ---------- section title strip ---------- */
+  .strip {
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    align-items: center;
+    gap: 18px;
+    margin: 44px 0 18px;
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: .22em;
+    text-transform: uppercase;
+    color: var(--ink-3);
+  }
+  .strip .num { color: var(--accent); }
+  .strip hr {
+    border: 0;
+    border-top: 1px solid var(--rule);
+    margin: 0;
+  }
+
+  /* ---------- two panels ---------- */
+  .panels {
+    display: grid;
+    grid-template-columns: minmax(0, 440px) minmax(0, 1fr);
+    gap: 36px;
+  }
+  @media (max-width: 1080px) {
+    .panels { grid-template-columns: 1fr; }
+    .wrap { padding: 40px 28px 80px; }
+  }
+
+  .panel {
+    background: var(--paper);
+    border: 1px solid var(--ink);
+    position: relative;
+  }
+  .panel::before {
+    /* tiny corner ticks like a draft sheet */
+    content: "";
+    position: absolute;
+    inset: 6px;
+    border: 1px solid var(--rule);
+    pointer-events: none;
+  }
+  .panel-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    padding: 14px 18px 12px;
+    border-bottom: 1px solid var(--rule);
+    font-family: var(--mono);
+    font-size: 10.5px;
+    letter-spacing: .2em;
+    text-transform: uppercase;
+    color: var(--ink-3);
+    background: var(--paper-deep);
+    position: relative;
+    z-index: 1;
+  }
+  .panel-head .title {
+    color: var(--ink);
+    letter-spacing: .2em;
+  }
+  .panel-head .meta { color: var(--ink-3); }
+
+  .panel-body {
+    padding: 22px 18px 24px;
+    position: relative;
+    z-index: 1;
+  }
+
+  /* ---------- left panel: pipeline ---------- */
+  .pipe {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0;
+  }
+
+  .stage {
+    position: relative;
+    border: 1px solid var(--ink);
+    background: var(--paper);
+    padding: 12px 14px;
+    display: grid;
+    grid-template-columns: 26px 1fr auto;
+    align-items: center;
+    gap: 12px;
+    font-family: var(--serif);
+  }
+  .stage .idx {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--accent);
+    letter-spacing: .12em;
+    border-right: 1px solid var(--rule);
+    padding-right: 8px;
+    text-align: right;
+  }
+  .stage .name {
+    font-size: 15px;
+    color: var(--ink);
+    letter-spacing: -.005em;
+  }
+  .stage .name .small {
+    display: block;
+    font-family: var(--mono);
+    font-size: 10.5px;
+    color: var(--ink-3);
+    margin-top: 2px;
+    letter-spacing: .04em;
+    text-transform: none;
+  }
+  .stage .shape {
+    font-family: var(--mono);
+    font-size: 10.5px;
+    color: var(--ink-2);
+    background: var(--paper-deep);
+    border: 1px solid var(--rule);
+    padding: 3px 6px;
+    white-space: nowrap;
+  }
+
+  /* the connecting "wire" between stages */
+  .wire {
+    height: 26px;
+    position: relative;
+    margin: 0 auto;
+    width: 2px;
+    background: var(--ink);
+  }
+  .wire .pulse {
+    position: absolute;
+    left: 50%;
+    top: -3px;
+    width: 7px;
+    height: 7px;
+    margin-left: -3.5px;
+    background: var(--accent);
+    border-radius: 50%;
+    box-shadow: 0 0 0 3px var(--accent-glow);
+    animation: flow 2.4s linear infinite;
+  }
+  @keyframes flow {
+    0%   { transform: translateY(0);    opacity: 0; }
+    10%  { opacity: 1; }
+    90%  { opacity: 1; }
+    100% { transform: translateY(26px); opacity: 0; }
+  }
+  /* stagger pulses so they cascade nicely */
+  .wire:nth-of-type(1) .pulse { animation-delay: 0s; }
+  .wire:nth-of-type(2) .pulse { animation-delay: .25s; }
+  .wire:nth-of-type(3) .pulse { animation-delay: .50s; }
+  .wire:nth-of-type(4) .pulse { animation-delay: .75s; }
+  .wire:nth-of-type(5) .pulse { animation-delay: 1.00s; }
+  .wire:nth-of-type(6) .pulse { animation-delay: 1.25s; }
+  .wire:nth-of-type(7) .pulse { animation-delay: 1.50s; }
+
+  /* the prompt strip + token row */
+  .prompt {
+    padding: 12px 14px;
+    border: 1px dashed var(--ink-4);
+    background: var(--paper-deep);
+    margin-bottom: 0;
+  }
+  .prompt .label {
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: .2em;
+    color: var(--ink-3);
+    text-transform: uppercase;
+    margin-bottom: 6px;
+  }
+  .prompt .text {
+    font-family: var(--serif);
+    font-style: italic;
+    font-size: 17px;
+    color: var(--ink);
+  }
+  .tokens {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    margin-top: 8px;
+  }
+  .tok {
+    font-family: var(--mono);
+    font-size: 10.5px;
+    color: var(--ink);
+    background: var(--paper);
+    border: 1px solid var(--rule);
+    padding: 2px 6px;
+    position: relative;
+  }
+  .tok .id {
+    color: var(--accent);
+    margin-left: 4px;
+  }
+
+  /* the 6× stack rendered as actual stacked plates */
+  .stack-wrap {
+    position: relative;
+    padding: 4px 0 0;
+  }
+  .stack {
+    position: relative;
+    height: 92px;
+  }
+  .plate {
+    position: absolute;
+    left: 50%;
+    width: 86%;
+    height: 22px;
+    border: 1px solid var(--ink);
+    background: var(--paper);
+    transform-origin: center;
+  }
+  .plate .pl {
+    position: absolute;
+    inset: 0;
+    display: grid;
+    grid-template-columns: 26px 1fr auto;
+    align-items: center;
+    gap: 12px;
+    padding: 0 14px;
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--ink-3);
+    letter-spacing: .04em;
+  }
+  .plate .pl .idx { color: var(--accent); }
+  .plate .pl .label { color: var(--ink); font-family: var(--serif); font-size: 13px; letter-spacing: 0; }
+  .plate .pl .shape { color: var(--ink-3); }
+
+  /* fan out the plates so the stack reads as depth */
+  .plate.p1 { top: 0px;  margin-left: calc(-43% + 0px);  background: var(--paper-deep); opacity: .55; }
+  .plate.p2 { top: 8px;  margin-left: calc(-43% + 2px);  background: var(--paper-deep); opacity: .70; }
+  .plate.p3 { top: 16px; margin-left: calc(-43% + 4px);  background: var(--paper-deep); opacity: .82; }
+  .plate.p4 { top: 24px; margin-left: calc(-43% + 6px);  background: var(--paper);      opacity: .92; }
+  .plate.p5 { top: 32px; margin-left: calc(-43% + 8px);  background: var(--paper);      opacity: .98; }
+  .plate.p6 {
+    top: 40px; margin-left: calc(-43% + 10px);
+    height: 38px;
+    background: var(--paper);
+    border: 1.5px solid var(--ink);
+    box-shadow: 6px 6px 0 0 var(--ink);
+    z-index: 2;
+  }
+  .plate.p6 .pl { grid-template-columns: 26px 1fr auto; padding: 0 14px; }
+  .plate.p6 .pl .label { font-size: 14.5px; }
+
+  .stack-side {
+    position: absolute;
+    right: 10px;
+    top: 30px;
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: .14em;
+    color: var(--accent);
+    transform: rotate(0deg);
+    background: var(--paper);
+    padding: 2px 6px;
+    border: 1px solid var(--accent);
+    z-index: 3;
+  }
+  .stack-callout {
+    position: absolute;
+    left: -6px;
+    bottom: -4px;
+    font-family: var(--mono);
+    font-size: 9.5px;
+    color: var(--ink-3);
+    letter-spacing: .12em;
+  }
+
+  /* "zoom" connector hint between left & right panels */
+  .zoom-hint {
+    position: absolute;
+    right: -22px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 22px;
+    height: 1px;
+    background: var(--ink);
+  }
+  .zoom-hint::after {
+    content: "";
+    position: absolute;
+    right: 0; top: -4px;
+    border-left: 8px solid var(--ink);
+    border-top: 4px solid transparent;
+    border-bottom: 4px solid transparent;
+  }
+  @media (max-width: 1080px) {
+    .zoom-hint { display: none; }
+  }
+
+  /* tied-head loopback annotation on the pipeline */
+  .stage.tied { border-color: var(--accent); }
+  .stage.tied .name { color: var(--accent); }
+  .stage.tied .shape { border-color: var(--accent); color: var(--accent); }
+  .loopback {
+    position: absolute;
+    pointer-events: none;
+    inset: 0;
+  }
+
+  /* ---------- right panel: attention zoom ---------- */
+  .zoom {
+    display: grid;
+    grid-template-columns: 1.05fr 1fr;
+    gap: 28px;
+    align-items: start;
+  }
+  @media (max-width: 760px) {
+    .zoom { grid-template-columns: 1fr; }
+  }
+
+  .block-diagram {
+    border: 1px solid var(--ink);
+    background: var(--paper);
+    padding: 18px 16px;
+    position: relative;
+  }
+  .block-diagram h3 {
+    margin: 0 0 14px;
+    font-family: var(--mono);
+    font-size: 10.5px;
+    letter-spacing: .22em;
+    color: var(--ink-3);
+    text-transform: uppercase;
+    font-weight: 600;
+  }
+  .row {
+    display: grid;
+    grid-template-columns: 80px 1fr;
+    gap: 14px;
+    align-items: center;
+    padding: 7px 0;
+    border-bottom: 1px dashed var(--rule);
+    font-size: 13.5px;
+  }
+  .row:last-child { border-bottom: 0; }
+  .row .tag {
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: .14em;
+    color: var(--ink-3);
+    text-transform: uppercase;
+  }
+  .row .tag.res { color: var(--accent); }
+  .row .body { color: var(--ink); }
+  .row .body .shape {
+    font-family: var(--mono);
+    font-size: 10.5px;
+    color: var(--ink-3);
+    margin-left: 6px;
+  }
+  .row .body em {
+    font-style: normal;
+    color: var(--accent);
+    font-family: var(--mono);
+    font-size: 11px;
+  }
+
+  /* attention mask visualization */
+  .mask-card {
+    border: 1px solid var(--ink);
+    background: var(--paper);
+    padding: 16px 16px 14px;
+    position: relative;
+  }
+  .mask-card h3 {
+    margin: 0 0 8px;
+    font-family: var(--mono);
+    font-size: 10.5px;
+    letter-spacing: .22em;
+    color: var(--ink-3);
+    text-transform: uppercase;
+    font-weight: 600;
+  }
+  .mask-card p.lede {
+    margin: 0 0 14px;
+    font-size: 13px;
+    color: var(--ink-2);
+    line-height: 1.5;
+  }
+  .mask-card .axis {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--ink-3);
+    letter-spacing: .14em;
+    text-transform: uppercase;
+  }
+  .mask-grid {
+    width: 100%;
+    height: auto;
+    display: block;
+  }
+  .mask-legend {
+    display: flex;
+    gap: 18px;
+    margin-top: 10px;
+    font-family: var(--mono);
+    font-size: 10.5px;
+    color: var(--ink-3);
+    letter-spacing: .04em;
+  }
+  .mask-legend .sw {
+    display: inline-block;
+    width: 12px; height: 12px;
+    vertical-align: -2px;
+    margin-right: 6px;
+    border: 1px solid var(--ink);
+  }
+  .mask-legend .sw.attend { background: var(--accent); }
+  .mask-legend .sw.mask   { background: var(--paper-deep); }
+
+  /* ---------- callouts ---------- */
+  .callouts {
+    margin-top: 44px;
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 18px;
+  }
+  @media (max-width: 1080px) { .callouts { grid-template-columns: repeat(2, 1fr); } }
+  @media (max-width: 560px)  { .callouts { grid-template-columns: 1fr; } }
+
+  .note {
+    border-top: 2px solid var(--ink);
+    padding: 14px 2px 4px;
+    position: relative;
+  }
+  .note .n {
+    position: absolute;
+    top: -14px;
+    left: -2px;
+    background: var(--paper);
+    padding: 0 6px 0 0;
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: .2em;
+    color: var(--accent);
+  }
+  .note h4 {
+    margin: 0 0 6px;
+    font-family: var(--serif);
+    font-style: italic;
+    font-size: 18px;
+    font-weight: 500;
+    color: var(--ink);
+  }
+  .note p {
+    margin: 0;
+    font-family: var(--serif);
+    font-size: 13.5px;
+    color: var(--ink-2);
+    line-height: 1.5;
+  }
+  .note code {
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--accent);
+    background: none;
+  }
+
+  /* ---------- footer ---------- */
+  footer {
+    margin-top: 64px;
+    border-top: 1px solid var(--ink);
+    padding-top: 14px;
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    font-family: var(--mono);
+    font-size: 10.5px;
+    letter-spacing: .14em;
+    text-transform: uppercase;
+    color: var(--ink-3);
+  }
+  footer .repo { color: var(--ink); }
+  footer .accent { color: var(--accent); }
+
+  /* ---------- SVG element styles ---------- */
+  .arrow-line { stroke: var(--ink); stroke-width: 1.4; fill: none; }
+  .arrow-head { fill: var(--ink); }
+  .arrow-accent { stroke: var(--accent); }
+  .arrow-accent-head { fill: var(--accent); }
+  .arrow-dashed { stroke-dasharray: 4 4; }
+
+  /* reduced motion */
+  @media (prefers-reduced-motion: reduce) {
+    .wire .pulse { animation: none; opacity: 0; }
+    .mask-cell, .mask-row-glow, .loop-pulse, .qkv-flow { animation: none !important; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <!-- ===================== MASTHEAD ===================== -->
+  <header class="mast">
+    <div class="left">
+      <p class="eyebrow">Figure 01 · Decoder-only transformer · Apple MLX</p>
+      <h1>picogpt<span class="amp">·</span>mlx</h1>
+      <p class="sub">A pedagogical 6-layer GPT, trained character-on-Shakespeare, drawn at block level with the attention head opened up.</p>
+    </div>
+    <div class="right">
+      <div><span class="k">block_size</span> 256</div>
+      <div><span class="k">n_layer</span>    6</div>
+      <div><span class="k">n_head</span>     8</div>
+      <div><span class="k">d_model</span>    384</div>
+      <div><span class="k">vocab</span>      50,257</div>
+      <div class="accent">~10.8M params · bf16</div>
+    </div>
+  </header>
+
+  <!-- ===================== SECTION STRIP ===================== -->
+  <div class="strip">
+    <span><span class="num">§ 01 ·</span> Overview pipeline</span>
+    <hr/>
+    <span><span class="num">§ 02 ·</span> Block, opened</span>
+  </div>
+
+  <!-- ===================== PANELS ===================== -->
+  <div class="panels">
+
+    <!-- ============ LEFT: pipeline ============ -->
+    <section class="panel">
+      <div class="panel-head">
+        <span class="title">forward pass · top → bottom</span>
+        <span class="meta">gpt.py · GPT.__call__</span>
+      </div>
+      <div class="panel-body">
+        <div class="pipe" id="pipe">
+
+          <!-- 1. Prompt -->
+          <div class="prompt">
+            <div class="label">input text</div>
+            <div class="text">“To be, or not to be”</div>
+            <div class="tokens" aria-label="GPT-2 BPE token ids">
+              <span class="tok">To<span class="id">·2514</span></span>
+              <span class="tok"> be<span class="id">·307</span></span>
+              <span class="tok">,<span class="id">·11</span></span>
+              <span class="tok"> or<span class="id">·393</span></span>
+              <span class="tok"> not<span class="id">·407</span></span>
+              <span class="tok"> to<span class="id">·284</span></span>
+              <span class="tok"> be<span class="id">·307</span></span>
+            </div>
+          </div>
+
+          <div class="wire"><span class="pulse"></span></div>
+
+          <!-- 2. Embeddings (token + positional) -->
+          <div class="stage" id="stage-embed">
+            <div class="idx">02</div>
+            <div class="name">Embeddings
+              <span class="small">tok_emb(idx) + pos_emb(arange T)</span>
+            </div>
+            <div class="shape">[B, T, 384]</div>
+          </div>
+
+          <div class="wire"><span class="pulse"></span></div>
+
+          <!-- 3. Blocks ×6 rendered as a stack -->
+          <div class="stack-wrap">
+            <div class="stack">
+              <div class="plate p1"><div class="pl"><span class="idx">·</span><span class="label">Block</span><span class="shape">[B,T,384]</span></div></div>
+              <div class="plate p2"><div class="pl"><span class="idx">·</span><span class="label">Block</span><span class="shape">[B,T,384]</span></div></div>
+              <div class="plate p3"><div class="pl"><span class="idx">·</span><span class="label">Block</span><span class="shape">[B,T,384]</span></div></div>
+              <div class="plate p4"><div class="pl"><span class="idx">·</span><span class="label">Block</span><span class="shape">[B,T,384]</span></div></div>
+              <div class="plate p5"><div class="pl"><span class="idx">·</span><span class="label">Block</span><span class="shape">[B,T,384]</span></div></div>
+              <div class="plate p6">
+                <div class="pl"><span class="idx">03</span><span class="label">Block — pre-LN · attn · FFN</span><span class="shape">[B,T,384]</span></div>
+                <div class="zoom-hint" aria-label="zoom into a block"></div>
+              </div>
+              <div class="stack-side">× 6</div>
+              <div class="stack-callout">a stack of six identical residual blocks</div>
+            </div>
+          </div>
+
+          <div class="wire"><span class="pulse"></span></div>
+
+          <!-- 4. Final LN -->
+          <div class="stage" id="stage-lnf">
+            <div class="idx">04</div>
+            <div class="name">Final LayerNorm
+              <span class="small">ln_f — stabilises pre-readout activations</span>
+            </div>
+            <div class="shape">[B, T, 384]</div>
+          </div>
+
+          <div class="wire"><span class="pulse"></span></div>
+
+          <!-- 5. Tied LM head -->
+          <div class="stage tied" id="stage-head">
+            <div class="idx">05</div>
+            <div class="name">Tied LM head
+              <span class="small">tok_emb.as_linear(x) — reuses input weights</span>
+            </div>
+            <div class="shape">[B, T, 50257]</div>
+          </div>
+
+          <div class="wire"><span class="pulse"></span></div>
+
+          <!-- 6. Logits -->
+          <div class="stage" id="stage-logits">
+            <div class="idx">06</div>
+            <div class="name">Softmax · next-token distribution
+              <span class="small">argmax / categorical sample → next id</span>
+            </div>
+            <div class="shape">P(t<sub>i+1</sub> | t<sub>≤i</sub>)</div>
+          </div>
+
+          <!-- loopback SVG overlay: from embedding row back up to head row -->
+          <svg class="loopback" viewBox="0 0 440 800" preserveAspectRatio="none" aria-hidden="true">
+            <defs>
+              <marker id="arrowAccent" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+                <path d="M 0 0 L 10 5 L 0 10 z" class="arrow-accent-head"/>
+              </marker>
+            </defs>
+            <!-- drawn precisely by JS at runtime so it follows real DOM positions -->
+            <path id="loopback-path"
+                  class="arrow-line arrow-accent arrow-dashed"
+                  marker-end="url(#arrowAccent)"
+                  d=""/>
+            <text id="loopback-label" class="loopback-label"
+                  fill="var(--accent)"
+                  font-family="JetBrains Mono, SF Mono, Menlo, monospace"
+                  font-size="10"
+                  letter-spacing="0.12em"
+                  text-anchor="start">WEIGHTS TIED</text>
+          </svg>
+
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ RIGHT: block zoom ============ -->
+    <section class="panel">
+      <div class="panel-head">
+        <span class="title">one Block · pre-LN residual</span>
+        <span class="meta">gpt.py · Block · attention.py · CausalSelfAttention</span>
+      </div>
+      <div class="panel-body">
+
+        <div class="zoom">
+
+          <!-- left col: block flow -->
+          <div class="block-diagram">
+            <h3>Residual block — top to bottom</h3>
+
+            <div class="row"><div class="tag">in</div>
+              <div class="body">x <span class="shape">[B, T, 384]</span></div></div>
+
+            <div class="row"><div class="tag">ln1</div>
+              <div class="body">LayerNorm <span class="shape">→ same shape</span></div></div>
+
+            <div class="row"><div class="tag">qkv</div>
+              <div class="body">Linear <em>3·d</em>, no bias <span class="shape">→ [B, T, 1152]</span></div></div>
+
+            <div class="row"><div class="tag">split</div>
+              <div class="body">into Q · K · V <span class="shape">→ 3 × [B, T, 384]</span></div></div>
+
+            <div class="row"><div class="tag">heads</div>
+              <div class="body">reshape · transpose <span class="shape">→ [B, 8, T, 48]</span></div></div>
+
+            <div class="row"><div class="tag">attn</div>
+              <div class="body">softmax( <em>QKᵀ / √d_head</em> + mask ) · V <span class="shape">→ [B, 8, T, 48]</span></div></div>
+
+            <div class="row"><div class="tag">proj</div>
+              <div class="body">concat · Linear <span class="shape">→ [B, T, 384]</span></div></div>
+
+            <div class="row"><div class="tag res">⊕</div>
+              <div class="body">residual: x = x + attn(ln1(x))</div></div>
+
+            <div class="row"><div class="tag">ln2</div>
+              <div class="body">LayerNorm</div></div>
+
+            <div class="row"><div class="tag">ffn</div>
+              <div class="body">Linear d → 4d · GELU · Linear 4d → d <span class="shape">[B, T, 1536] → [B, T, 384]</span></div></div>
+
+            <div class="row"><div class="tag res">⊕</div>
+              <div class="body">residual: x = x + ffn(ln2(x))</div></div>
+          </div>
+
+          <!-- right col: causal mask viz + qkv schematic -->
+          <div>
+
+            <!-- QKV schematic -->
+            <div class="mask-card" style="margin-bottom: 18px;">
+              <h3>Fused QKV → 8 heads</h3>
+              <p class="lede">A single <code style="font-family:var(--mono);color:var(--accent)">Linear(d, 3d)</code> projects the hidden state, then <code style="font-family:var(--mono);color:var(--accent)">mx.split</code> peels off Q, K, V and reshapes to <code style="font-family:var(--mono);color:var(--accent)">[B, 8, T, 48]</code>.</p>
+
+              <svg viewBox="0 0 360 130" class="mask-grid" aria-label="fused QKV diagram">
+                <defs>
+                  <marker id="arrSm" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+                    <path d="M0 0 L10 5 L0 10 z" fill="#14140e"/>
+                  </marker>
+                </defs>
+
+                <!-- x box -->
+                <rect x="6" y="50" width="60" height="30" fill="none" stroke="#14140e" stroke-width="1.2"/>
+                <text x="36" y="69" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="11" fill="#14140e">x · d</text>
+                <text x="36" y="40" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="9" fill="#5a5a4d" letter-spacing="0.1em">[B,T,384]</text>
+
+                <!-- linear box -->
+                <rect x="98" y="44" width="86" height="42" fill="#efe8d8" stroke="#c4441f" stroke-width="1.4"/>
+                <text x="141" y="62" text-anchor="middle" font-family="Iowan Old Style, Georgia, serif" font-style="italic" font-size="13" fill="#14140e">Linear</text>
+                <text x="141" y="76" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="10" fill="#c4441f">d → 3d</text>
+
+                <!-- arrow -->
+                <line x1="66" y1="65" x2="96" y2="65" class="arrow-line" marker-end="url(#arrSm)"/>
+
+                <!-- split bracket -->
+                <line x1="184" y1="65" x2="210" y2="65" class="arrow-line"/>
+                <line x1="210" y1="20" x2="210" y2="110" class="arrow-line"/>
+                <line x1="210" y1="20" x2="230" y2="20" class="arrow-line" marker-end="url(#arrSm)"/>
+                <line x1="210" y1="65" x2="230" y2="65" class="arrow-line" marker-end="url(#arrSm)"/>
+                <line x1="210" y1="110" x2="230" y2="110" class="arrow-line" marker-end="url(#arrSm)"/>
+
+                <!-- Q K V boxes -->
+                <rect x="232" y="8"  width="120" height="24" fill="none" stroke="#14140e"/>
+                <rect x="232" y="53" width="120" height="24" fill="none" stroke="#14140e"/>
+                <rect x="232" y="98" width="120" height="24" fill="none" stroke="#14140e"/>
+                <text x="244" y="24" font-family="Iowan Old Style, Georgia, serif" font-style="italic" font-size="13" fill="#14140e">Q</text>
+                <text x="244" y="69" font-family="Iowan Old Style, Georgia, serif" font-style="italic" font-size="13" fill="#14140e">K</text>
+                <text x="244" y="114" font-family="Iowan Old Style, Georgia, serif" font-style="italic" font-size="13" fill="#14140e">V</text>
+                <text x="346" y="24"  text-anchor="end" font-family="JetBrains Mono, monospace" font-size="10" fill="#5a5a4d">[B,8,T,48]</text>
+                <text x="346" y="69"  text-anchor="end" font-family="JetBrains Mono, monospace" font-size="10" fill="#5a5a4d">[B,8,T,48]</text>
+                <text x="346" y="114" text-anchor="end" font-family="JetBrains Mono, monospace" font-size="10" fill="#5a5a4d">[B,8,T,48]</text>
+
+                <!-- flow tick -->
+                <circle class="qkv-flow" cx="80" cy="65" r="3.5" fill="#c4441f">
+                  <animate attributeName="cx" values="78;208;78" dur="4s" repeatCount="indefinite"/>
+                  <animate attributeName="opacity" values="0;1;1;0" keyTimes="0;0.1;0.9;1" dur="4s" repeatCount="indefinite"/>
+                </circle>
+              </svg>
+            </div>
+
+            <!-- mask animation -->
+            <div class="mask-card">
+              <h3>Causal mask — reveal across positions</h3>
+              <p class="lede">Position <em style="color:var(--accent);font-style:normal;font-family:var(--mono)">i</em> attends to itself and all <em style="color:var(--accent);font-style:normal;font-family:var(--mono)">j ≤ i</em>. Future tokens are set to <code style="font-family:var(--mono);color:var(--accent)">-inf</code> before softmax — the lower triangle lights up as the model marches forward.</p>
+
+              <svg viewBox="0 0 320 320" class="mask-grid" id="maskSvg" aria-label="causal attention mask animation">
+                <!-- generated by JS below -->
+              </svg>
+
+              <div class="mask-legend">
+                <span><span class="sw attend"></span>attend (j ≤ i)</span>
+                <span><span class="sw mask"></span>masked (j &gt; i)</span>
+              </div>
+              <div style="display:flex; justify-content: space-between; margin-top: 8px;">
+                <span class="axis">↓ query position i</span>
+                <span class="axis">key position j →</span>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+      </div>
+    </section>
+  </div>
+
+  <!-- ===================== CALLOUTS ===================== -->
+  <div class="strip">
+    <span><span class="num">§ 03 ·</span> Implementation notes</span>
+    <hr/>
+    <span class="num">MLX · bf16 · 400 LOC</span>
+  </div>
+
+  <section class="callouts">
+    <div class="note">
+      <span class="n">N · 01</span>
+      <h4>Tied embeddings</h4>
+      <p>There is no separate LM head. <code>GPT.__call__</code> ends with <code>tok_emb.as_linear(x)</code>, projecting hidden states back to vocab using the input embedding's weights — saving ~19M parameters.</p>
+    </div>
+    <div class="note">
+      <span class="n">N · 02</span>
+      <h4>Fused QKV</h4>
+      <p>A single <code>Linear(d, 3·d)</code> with no bias produces Q, K, V at once. They're split along the last axis, then reshaped into eight heads of 48 dims.</p>
+    </div>
+    <div class="note">
+      <span class="n">N · 03</span>
+      <h4>Causal mask</h4>
+      <p>An upper-triangular boolean mask (<code>mx.triu(…, k=1)</code>) sends future positions to <code>-inf</code> before <code>softmax</code> — the only thing that makes attention auto-regressive.</p>
+    </div>
+    <div class="note">
+      <span class="n">N · 04</span>
+      <h4>bf16 + lazy eval</h4>
+      <p>Parameters live in <code>bfloat16</code>; the loss is cast to <code>float32</code> for log-softmax stability. <code>mx.compile</code> fuses fwd/bwd/AdamW into one graph; <code>mx.eval</code> forces materialisation.</p>
+    </div>
+  </section>
+
+  <!-- ===================== FOOTER ===================== -->
+  <footer>
+    <span class="repo">picogpt-mlx / docs / architecture.html</span>
+    <span class="accent">drawn from source · not from memory</span>
+  </footer>
+
+</div>
+
+<script>
+  // ------------------------------------------------------------------
+  // (1) Build the causal-mask grid as SVG and animate the reveal.
+  // ------------------------------------------------------------------
+  (function buildMask() {
+    const N = 16;                          // a 16x16 mask reads cleanly
+    const svg = document.getElementById('maskSvg');
+    const VB  = 320;
+    const pad = 8;
+    const cell = (VB - pad * 2) / N;
+
+    // background
+    const bg = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+    bg.setAttribute('x', pad - 1); bg.setAttribute('y', pad - 1);
+    bg.setAttribute('width', N * cell + 2); bg.setAttribute('height', N * cell + 2);
+    bg.setAttribute('fill', 'none');
+    bg.setAttribute('stroke', '#14140e');
+    bg.setAttribute('stroke-width', '1');
+    svg.appendChild(bg);
+
+    // cells
+    const cells = []; // for animation
+    for (let i = 0; i < N; i++) {
+      for (let j = 0; j < N; j++) {
+        const r = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+        r.setAttribute('x', pad + j * cell);
+        r.setAttribute('y', pad + i * cell);
+        r.setAttribute('width',  cell - 1.2);
+        r.setAttribute('height', cell - 1.2);
+        const masked = j > i;
+        r.setAttribute('fill', masked ? '#e6dec9' : '#efe8d8');
+        r.setAttribute('stroke', '#c7bfac');
+        r.setAttribute('stroke-width', '0.6');
+        r.dataset.i = i; r.dataset.j = j;
+        r.dataset.masked = masked ? '1' : '0';
+        svg.appendChild(r);
+        cells.push(r);
+      }
+    }
+
+    // diagonal accent line — boundary of the mask
+    const diag = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+    let d = '';
+    for (let i = 0; i < N; i++) {
+      const x = pad + (i + 1) * cell - 0.6;
+      const y0 = pad + i * cell;
+      const y1 = pad + (i + 1) * cell;
+      d += `M ${x} ${y0} L ${x} ${y1} L ${x - cell + 1.2} ${y1} `;
+    }
+    diag.setAttribute('d', d);
+    diag.setAttribute('stroke', '#c4441f');
+    diag.setAttribute('stroke-width', '1.2');
+    diag.setAttribute('fill', 'none');
+    svg.appendChild(diag);
+
+    // moving row highlight
+    const cursor = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+    cursor.setAttribute('x', pad);
+    cursor.setAttribute('width', N * cell);
+    cursor.setAttribute('height', cell);
+    cursor.setAttribute('fill', 'rgba(196,68,31,0.08)');
+    cursor.setAttribute('stroke', '#c4441f');
+    cursor.setAttribute('stroke-width', '1');
+    cursor.setAttribute('y', pad);
+    svg.appendChild(cursor);
+
+    // animation loop: walk row by row, light up attended cells
+    const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+    function paintRow(i) {
+      for (let j = 0; j < N; j++) {
+        const r = cells[i * N + j];
+        if (r.dataset.masked === '0') {
+          r.setAttribute('fill', '#c4441f');
+          r.setAttribute('opacity', '1');
+        }
+      }
+    }
+    function fadeRow(i, factor) {
+      for (let j = 0; j < N; j++) {
+        const r = cells[i * N + j];
+        if (r.dataset.masked === '0') {
+          r.setAttribute('fill', '#c4441f');
+          r.setAttribute('opacity', factor.toFixed(3));
+        }
+      }
+    }
+
+    // initial static state if reduced motion: paint the whole lower triangle softly
+    if (reduce) {
+      for (let i = 0; i < N; i++) fadeRow(i, 0.7);
+      cursor.style.display = 'none';
+      return;
+    }
+
+    let row = 0;
+    let lastT = performance.now();
+    const stepMs = 220;        // ms per row
+    const trail = 6;           // how many rows behind the cursor remain bright
+
+    function tick(now) {
+      if (now - lastT >= stepMs) {
+        lastT = now;
+        // fade older rows
+        for (let k = 0; k < N; k++) {
+          const dist = row - k;
+          if (dist < 0) {
+            // not yet reached: keep neutral
+            for (let j = 0; j < N; j++) {
+              const r = cells[k * N + j];
+              if (r.dataset.masked === '0') {
+                r.setAttribute('fill', '#efe8d8');
+                r.setAttribute('opacity', '1');
+              }
+            }
+          } else {
+            const t = Math.max(0.18, 1 - (dist / trail) * 0.78);
+            fadeRow(k, t);
+          }
+        }
+        // paint current row strongly
+        paintRow(row);
+        // move cursor
+        cursor.setAttribute('y', pad + row * cell);
+        row = (row + 1) % (N + 6);   // pause after last row before restart
+        if (row >= N) {
+          cursor.setAttribute('y', pad + (N - 1) * cell);
+        }
+      }
+      requestAnimationFrame(tick);
+    }
+    requestAnimationFrame(tick);
+  })();
+
+  // ------------------------------------------------------------------
+  // (2) Draw the tied-head loopback arrow precisely against DOM.
+  //     Goes from the right side of the LM head row UP and LEFT back
+  //     to the right side of the Embeddings row, hugging the panel.
+  // ------------------------------------------------------------------
+  (function drawLoopback() {
+    const svg   = document.querySelector('.loopback');
+    const path  = document.getElementById('loopback-path');
+    const label = document.getElementById('loopback-label');
+    const pipe  = document.getElementById('pipe');
+    const emb   = document.getElementById('stage-embed');
+    const head  = document.getElementById('stage-head');
+    if (!svg || !path || !pipe || !emb || !head) return;
+
+    function layout() {
+      const pr = pipe.getBoundingClientRect();
+      const er = emb.getBoundingClientRect();
+      const hr = head.getBoundingClientRect();
+      const W = pr.width, H = pr.height;
+      svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
+      svg.style.width = W + 'px';
+      svg.style.height = H + 'px';
+
+      // anchor points (right edges)
+      const x1 = (hr.right - pr.left) - 6;            // start: right edge of head
+      const y1 = (hr.top   - pr.top)  + hr.height / 2;
+      const x2 = (er.right - pr.left) - 6;            // end:   right edge of embed
+      const y2 = (er.top   - pr.top)  + er.height / 2;
+
+      // route: go out to the right, up, then back in
+      const outX = W - 8;
+
+      const d = `
+        M ${x1} ${y1}
+        L ${outX} ${y1}
+        L ${outX} ${y2}
+        L ${x2 + 4} ${y2}
+      `;
+      path.setAttribute('d', d);
+
+      // label between the two horizontal runs
+      label.setAttribute('x', outX - 4);
+      label.setAttribute('y', (y1 + y2) / 2 - 4);
+      label.setAttribute('text-anchor', 'end');
+      label.setAttribute('writing-mode', 'tb');
+      label.setAttribute('transform', `rotate(180 ${outX - 4} ${(y1 + y2) / 2 - 4})`);
+    }
+
+    layout();
+    window.addEventListener('resize', layout);
+    // re-run after fonts settle
+    setTimeout(layout, 80);
+    setTimeout(layout, 400);
+  })();
+</script>
+</body>
+</html>
