@@ -43,6 +43,61 @@ Implementation lives in three files:
 - `gpt.py` — `FeedForward`, `Block` (pre-LN + residual), `GPT` (embeddings + stack + tied head + `generate`)
 - `tokenizer.py` — thin wrapper over `tiktoken`'s pretrained GPT-2 BPE
 
+### Forward pass
+
+End-to-end. Each `Block` is repeated 6 times; its internal structure is expanded inside the subgraph.
+
+```mermaid
+flowchart TD
+    Input["idx: [B, T] token ids"]
+    Pos["pos = arange(T)"]
+    Input --> Pos
+    Input --> TokEmb["Token Embedding<br/>50257 → 384"]
+    Pos --> PosEmb["Position Embedding<br/>256 → 384"]
+    TokEmb --> EmbAdd(("+"))
+    PosEmb --> EmbAdd
+    EmbAdd --> X0["x: [B, T, 384]"]
+    X0 --> Block
+
+    subgraph Block["Transformer Block — repeated x6 (pre-LN)"]
+        direction TB
+        BIn["x_in: [B, T, 384]"]
+        BIn --> LN1["LayerNorm"]
+        LN1 --> Attn["CausalSelfAttention<br/>(8 heads x 48 dim)"]
+        BIn --> Add1(("+"))
+        Attn --> Add1
+        Add1 --> LN2["LayerNorm"]
+        LN2 --> FF["FeedForward<br/>Linear 384 → 1536 → GELU → Linear 1536 → 384"]
+        Add1 --> Add2(("+"))
+        FF --> Add2
+        Add2 --> BOut["x_out: [B, T, 384]"]
+    end
+
+    Block --> LNf["Final LayerNorm"]
+    LNf --> Head["Tied LM Head<br/>(tok_emb.as_linear)<br/>→ [B, T, 50257]"]
+    Head --> Logits["logits"]
+    Logits -.->|generate: take last position, divide by temp, categorical sample| NextID["next token id"]
+```
+
+### Inside `CausalSelfAttention`
+
+What happens within the `Attn` box above. Shapes are annotated at each step; `H=8`, `head_dim=48`, `d_model = H·head_dim = 384`.
+
+```mermaid
+flowchart TD
+    AIn["x: [B, T, 384]"]
+    AIn --> QKV["fused Linear<br/>384 → 1152 (no bias)"]
+    QKV --> SplitH["split last dim → Q, K, V<br/>each [B, T, 384]"]
+    SplitH --> RS["reshape + transpose<br/>→ [B, 8, T, 48] per tensor"]
+    RS --> Dot["Q @ K^T · 1/sqrt(48)<br/>→ [B, 8, T, T]"]
+    Dot --> Mask["+ causal mask<br/>(upper-tri = -inf)"]
+    Mask --> Soft["softmax(axis=-1)"]
+    Soft --> Apply["attn @ V<br/>→ [B, 8, T, 48]"]
+    Apply --> Merge["transpose + reshape<br/>→ [B, T, 384]"]
+    Merge --> Proj["output Linear<br/>384 → 384 (no bias)"]
+    Proj --> AOut["[B, T, 384]"]
+```
+
 ## Training
 
 - **Dataset:** Tiny Shakespeare (`input.txt`, ~1 MB) — 90% train / 10% val split.
