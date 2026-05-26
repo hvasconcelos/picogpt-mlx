@@ -101,6 +101,43 @@ step  200  train  5.1... val  5.0... lr 3.00e-04
 └── pyproject.toml
 ```
 
+## Scaling: from Tiny Shakespeare to GPT-2
+
+This repo is deliberately tiny. The default model is ~30M parameters and Tiny Shakespeare is ~300K tokens, which means we're training at roughly **0.01 tokens/param** — about three orders of magnitude under the **Chinchilla** compute-optimal ratio of **~20 tokens/param** (Hoffmann et al., 2022). That's fine for a teaching repo, but it's worth knowing what it would actually take to climb the ladder.
+
+### Chinchilla-optimal training budget
+
+The Chinchilla scaling law says parameters (`N`) and training tokens (`D`) should scale roughly in lockstep at `D ≈ 20·N` to get the most loss per FLOP. Plugging in the GPT-2 family:
+
+| Model                | Params | Chinchilla-optimal tokens (`20·N`) |
+| -------------------- | ------ | ---------------------------------- |
+| this repo (default)  | ~30M   | ~600M                              |
+| GPT-2 Small          | 124M   | ~2.5B                              |
+| GPT-2 Medium         | 355M   | ~7B                                |
+| GPT-2 Large          | 774M   | ~15B                               |
+| GPT-2 XL             | 1.5B   | ~30B                               |
+
+A couple of caveats:
+
+- **Chinchilla is about *optimal* compute, not minimum quality.** If you have spare data, training *past* the 20:1 ratio still helps — with diminishing returns. Modern small-model reproductions (nanoGPT, llm.c) routinely train GPT-2 124M on **10–300B tokens** (≈ 4–100× Chinchilla) because at small scales data is cheap and validation loss keeps improving.
+- **The original GPT-2 was trained pre-Chinchilla** on WebText (~8B tokens, multiple epochs) — well over the 20:1 ratio for 124M. Chinchilla's main lesson was that *larger* models (GPT-3, Gopher) were *under-trained*, not the other way round.
+
+### What it would take to reach GPT-2 small from here
+
+To go from this repo to a faithful GPT-2 small (124M) reproduction:
+
+1. **Architecture bump** (easy — edit `gpt.py`): `d_model=768`, `n_layer=12`, `n_head=12`, `block_size=1024`. The Transformer code already handles it.
+2. **Swap the corpus** (the actual hard part): Tiny Shakespeare → [OpenWebText](https://skylion007.github.io/OpenWebTextCorpus/) (~8B tokens) or a [FineWeb](https://huggingface.co/datasets/HuggingFaceFW/fineweb) subset. `input.txt` won't cut it.
+3. **Train longer.** ~2.5B tokens for Chinchilla-optimal, or 10× that to match published reproductions.
+
+Rough compute envelope (back-of-envelope, not measured here):
+
+- Karpathy's [llm.c](https://github.com/karpathy/llm.c) reproduces GPT-2 124M in **~90 minutes on a single 8×H100 node** (~$20 in cloud cost).
+- nanoGPT in PyTorch: **~4 days on 8×A100** (~$330) for the full ~300B-token run.
+- On a single Apple Silicon Mac with MLX: expect a **Chinchilla-sized 124M run to take days**, and a full GPT-2 reproduction to take **weeks**. MLX is fast for what it is, but one chip is one chip.
+
+In short: this repo has the right *shape* for GPT-2 — same architecture, same tokenizer, same loss. To get the right *behavior*, the bottleneck isn't the code, it's data and FLOPs.
+
 ## License
 
 Personal learning project — do whatever you want with it.
