@@ -592,6 +592,315 @@
   .arrow-accent-head { fill: var(--accent); }
   .arrow-dashed { stroke-dasharray: 4 4; }
 
+  /* ---------- symbol key (under masthead) ---------- */
+  .legend {
+    margin: 18px 0 0;
+    padding: 14px 18px 16px;
+    background: var(--paper-deep);
+    border: 1px solid var(--rule);
+    position: relative;
+  }
+  .legend::before {
+    content: "";
+    position: absolute;
+    top: -1px; left: -1px;
+    width: 36px; height: 2px;
+    background: var(--accent);
+  }
+  .legend-title {
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: .22em;
+    text-transform: uppercase;
+    color: var(--ink-3);
+    margin-bottom: 10px;
+  }
+  .legend-grid {
+    list-style: none;
+    margin: 0; padding: 0;
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 10px 24px;
+  }
+  @media (max-width: 760px)  { .legend-grid { grid-template-columns: repeat(2, minmax(0,1fr)); } }
+  @media (max-width: 420px)  { .legend-grid { grid-template-columns: 1fr; } }
+  .legend-grid li {
+    display: grid;
+    grid-template-columns: 56px 1fr auto;
+    align-items: baseline;
+    gap: 10px;
+    font-family: var(--serif);
+    font-size: 13.5px;
+    color: var(--ink-2);
+    border-left: 1px solid var(--rule);
+    padding-left: 12px;
+  }
+  .legend-grid li b {
+    font-family: var(--mono);
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--accent);
+    letter-spacing: .02em;
+  }
+  .legend-grid li span { color: var(--ink); }
+  .legend-grid li i {
+    font-family: var(--mono);
+    font-style: normal;
+    font-size: 10.5px;
+    color: var(--ink-3);
+    letter-spacing: .04em;
+  }
+
+  /* ---------- parameter ledger ---------- */
+  .ledger {
+    margin-top: 20px;
+  }
+  .ledger-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1.55fr) minmax(0, 1fr);
+    gap: 28px;
+    align-items: start;
+  }
+  @media (max-width: 1080px) {
+    .ledger-grid { grid-template-columns: 1fr; }
+  }
+  .ledger-table {
+    border: 1px solid var(--ink);
+    background: var(--paper);
+    padding: 12px 14px 14px;
+  }
+  .ledger-table .lh {
+    display: grid;
+    grid-template-columns: 1.55fr 1.4fr 1.1fr 1fr 0.55fr;
+    gap: 12px;
+    padding: 4px 4px 8px;
+    border-bottom: 1px solid var(--ink);
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: .2em;
+    text-transform: uppercase;
+    color: var(--ink-3);
+  }
+  .ledger-table .lh span:nth-child(4),
+  .ledger-table .lh span:nth-child(5) { text-align: right; }
+  .ledger-table .lgroup {
+    margin-top: 12px;
+    padding: 4px 4px 4px;
+    font-family: var(--mono);
+    font-size: 9.5px;
+    letter-spacing: .22em;
+    text-transform: uppercase;
+    color: var(--accent);
+    border-bottom: 1px dashed var(--rule);
+  }
+  .ledger-table .lr {
+    display: grid;
+    grid-template-columns: 1.55fr 1.4fr 1.1fr 1fr 0.55fr;
+    gap: 12px;
+    padding: 6px 4px;
+    align-items: baseline;
+    font-family: var(--serif);
+    font-size: 13.5px;
+    color: var(--ink);
+    border-bottom: 1px dashed var(--rule);
+  }
+  .ledger-table .lr:last-child { border-bottom: 0; }
+  .ledger-table .lr em {
+    font-style: normal;
+    font-family: var(--mono);
+    font-size: 10.5px;
+    color: var(--ink-3);
+    letter-spacing: .04em;
+  }
+  .ledger-table .lr .f,
+  .ledger-table .lr .s {
+    font-family: var(--mono);
+    font-size: 11.5px;
+    color: var(--ink-2);
+  }
+  .ledger-table .lr .f { color: var(--accent); }
+  .ledger-table .lr .p,
+  .ledger-table .lr .pct {
+    font-family: var(--mono);
+    font-size: 12px;
+    text-align: right;
+    color: var(--ink);
+    font-variant-numeric: tabular-nums;
+  }
+  .ledger-table .lr .pct { color: var(--ink-3); }
+  .ledger-table .lr.sub {
+    background: var(--paper-deep);
+    margin: 2px -4px;
+    padding-left: 8px;
+    padding-right: 8px;
+    border-bottom: 1px dashed var(--rule);
+  }
+  .ledger-table .lr.tied .p { color: var(--ink-3); }
+  .ledger-table .lr.total {
+    margin-top: 6px;
+    border-top: 2px solid var(--ink);
+    border-bottom: 0;
+    padding-top: 10px;
+    font-size: 14.5px;
+  }
+  .ledger-table .lr.total .p,
+  .ledger-table .lr.total .pct { color: var(--accent); font-size: 13px; }
+
+  /* right column — derivation cards */
+  .ledger-side {
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+  }
+  .deriv {
+    border: 1px solid var(--ink);
+    background: var(--paper);
+    padding: 14px 16px 16px;
+    position: relative;
+  }
+  .deriv .dh {
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: .22em;
+    text-transform: uppercase;
+    color: var(--ink-3);
+    margin-bottom: 10px;
+  }
+  .deriv .formula {
+    margin: 0;
+    font-family: var(--mono);
+    font-size: 12.5px;
+    line-height: 1.55;
+    color: var(--ink);
+    white-space: pre;
+    overflow-x: auto;
+  }
+  .deriv .formula .bigtot {
+    color: var(--accent);
+    font-size: 15px;
+    letter-spacing: .02em;
+  }
+  .deriv .np {
+    margin: 0 0 8px;
+    font-family: var(--serif);
+    font-size: 13.5px;
+    color: var(--ink-2);
+    line-height: 1.5;
+  }
+  .deriv .np:last-child { margin-bottom: 0; }
+  .deriv .np b { color: var(--ink); font-weight: 600; }
+  .mono {
+    font-family: var(--mono);
+    font-size: 11.5px;
+    color: var(--accent);
+  }
+
+  /* stacked bars */
+  .bars {
+    list-style: none;
+    margin: 0; padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .bars li {
+    display: grid;
+    grid-template-columns: 100px 1fr 56px;
+    gap: 12px;
+    align-items: center;
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--ink-2);
+  }
+  .bars .bl { color: var(--ink-3); letter-spacing: .08em; text-transform: uppercase; font-size: 10px; }
+  .bars .bb {
+    position: relative;
+    height: 10px;
+    background: var(--paper-deep);
+    border: 1px solid var(--rule);
+    overflow: hidden;
+  }
+  .bars .bf {
+    display: block;
+    height: 100%;
+    background: var(--accent);
+  }
+  .bars .bv { text-align: right; color: var(--ink); font-variant-numeric: tabular-nums; }
+
+  /* ---------- parameter budget (simplified) ---------- */
+  .budget { margin-top: 20px; }
+  .budget-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.35fr);
+    gap: 28px;
+    align-items: stretch;
+  }
+  @media (max-width: 1080px) {
+    .budget-grid { grid-template-columns: 1fr; }
+  }
+  .budget-head,
+  .budget-bars {
+    border: 1px solid var(--ink);
+    background: var(--paper);
+    padding: 22px 24px 22px;
+    position: relative;
+  }
+  .budget-head .big-num {
+    font-family: var(--serif);
+    font-style: italic;
+    font-weight: 500;
+    font-size: clamp(56px, 7vw, 84px);
+    line-height: 1;
+    color: var(--accent);
+    letter-spacing: -.02em;
+  }
+  .budget-head .big-num .m {
+    font-style: normal;
+    font-family: var(--mono);
+    font-size: 0.38em;
+    letter-spacing: .04em;
+    vertical-align: 0.55em;
+    margin-left: 2px;
+  }
+  .budget-head .big-sub {
+    font-family: var(--mono);
+    font-size: 10.5px;
+    letter-spacing: .2em;
+    text-transform: uppercase;
+    color: var(--ink-3);
+    margin: 10px 0 14px;
+    padding-bottom: 14px;
+    border-bottom: 1px dashed var(--rule);
+  }
+  .budget-head .np {
+    margin: 0;
+    font-family: var(--serif);
+    font-size: 14px;
+    color: var(--ink-2);
+    line-height: 1.55;
+  }
+  .budget-head .np b { color: var(--ink); font-weight: 600; }
+  .budget-head .np code {
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--accent);
+    background: none;
+  }
+  .budget-bars .dh {
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: .22em;
+    text-transform: uppercase;
+    color: var(--ink-3);
+    margin-bottom: 16px;
+  }
+  /* widen the value column so "19.4 M · 65 %" fits without wrapping */
+  .budget-bars .bars li {
+    grid-template-columns: 110px 1fr 116px;
+    font-size: 11.5px;
+  }
+  .budget-bars .bars li .bv { font-size: 11.5px; }
+
   /* reduced motion */
   @media (prefers-reduced-motion: reduce) {
     .wire .pulse { animation: none; opacity: 0; }
@@ -615,9 +924,23 @@
       <div><span class="k">n_head</span>     8</div>
       <div><span class="k">d_model</span>    384</div>
       <div><span class="k">vocab</span>      50,257</div>
-      <div class="accent">~10.8M params · bf16</div>
+      <div class="accent">30.0M params · 10.6M non-emb · bf16</div>
     </div>
   </header>
+
+  <!-- ===================== SYMBOL KEY ===================== -->
+  <aside class="legend" aria-label="symbol key">
+    <div class="legend-title">Symbols</div>
+    <ul class="legend-grid">
+      <li><b>T</b><span>sequence length</span><i>≤ block_size = 256</i></li>
+      <li><b>d</b><span>d_model</span><i>384</i></li>
+      <li><b>h</b><span>n_head</span><i>8</i></li>
+      <li><b>d_head</b><span>per-head dim</span><i>d / h = 48</i></li>
+      <li><b>L</b><span>n_layer</span><i>6</i></li>
+      <li><b>V</b><span>vocab</span><i>50,257 · GPT-2 BPE</i></li>
+      <li><b>4d</b><span>FFN inner</span><i>1,536</i></li>
+    </ul>
+  </aside>
 
   <!-- ===================== SECTION STRIP ===================== -->
   <div class="strip">
@@ -661,7 +984,7 @@
             <div class="name">Embeddings
               <span class="small">tok_emb(idx) + pos_emb(arange T)</span>
             </div>
-            <div class="shape">[B, T, 384]</div>
+            <div class="shape">[T, 384]</div>
           </div>
 
           <div class="wire"><span class="pulse"></span></div>
@@ -669,13 +992,13 @@
           <!-- 3. Blocks ×6 rendered as a stack -->
           <div class="stack-wrap">
             <div class="stack">
-              <div class="plate p1"><div class="pl"><span class="idx">·</span><span class="label">Block</span><span class="shape">[B,T,384]</span></div></div>
-              <div class="plate p2"><div class="pl"><span class="idx">·</span><span class="label">Block</span><span class="shape">[B,T,384]</span></div></div>
-              <div class="plate p3"><div class="pl"><span class="idx">·</span><span class="label">Block</span><span class="shape">[B,T,384]</span></div></div>
-              <div class="plate p4"><div class="pl"><span class="idx">·</span><span class="label">Block</span><span class="shape">[B,T,384]</span></div></div>
-              <div class="plate p5"><div class="pl"><span class="idx">·</span><span class="label">Block</span><span class="shape">[B,T,384]</span></div></div>
+              <div class="plate p1"><div class="pl"><span class="idx">·</span><span class="label">Block</span><span class="shape">[T, 384]</span></div></div>
+              <div class="plate p2"><div class="pl"><span class="idx">·</span><span class="label">Block</span><span class="shape">[T, 384]</span></div></div>
+              <div class="plate p3"><div class="pl"><span class="idx">·</span><span class="label">Block</span><span class="shape">[T, 384]</span></div></div>
+              <div class="plate p4"><div class="pl"><span class="idx">·</span><span class="label">Block</span><span class="shape">[T, 384]</span></div></div>
+              <div class="plate p5"><div class="pl"><span class="idx">·</span><span class="label">Block</span><span class="shape">[T, 384]</span></div></div>
               <div class="plate p6">
-                <div class="pl"><span class="idx">03</span><span class="label">Block — pre-LN · attn · FFN</span><span class="shape">[B,T,384]</span></div>
+                <div class="pl"><span class="idx">03</span><span class="label">Block — pre-LN · attn · FFN</span><span class="shape">[T, 384]</span></div>
                 <div class="zoom-hint" aria-label="zoom into a block"></div>
               </div>
               <div class="stack-side">× 6</div>
@@ -691,7 +1014,7 @@
             <div class="name">Final LayerNorm
               <span class="small">ln_f — stabilises pre-readout activations</span>
             </div>
-            <div class="shape">[B, T, 384]</div>
+            <div class="shape">[T, 384]</div>
           </div>
 
           <div class="wire"><span class="pulse"></span></div>
@@ -702,7 +1025,7 @@
             <div class="name">Tied LM head
               <span class="small">tok_emb.as_linear(x) — reuses input weights</span>
             </div>
-            <div class="shape">[B, T, 50257]</div>
+            <div class="shape">[T, 50257]</div>
           </div>
 
           <div class="wire"><span class="pulse"></span></div>
@@ -755,25 +1078,25 @@
             <h3>Residual block — top to bottom</h3>
 
             <div class="row"><div class="tag">in</div>
-              <div class="body">x <span class="shape">[B, T, 384]</span></div></div>
+              <div class="body">x <span class="shape">[T, 384]</span></div></div>
 
             <div class="row"><div class="tag">ln1</div>
               <div class="body">LayerNorm <span class="shape">→ same shape</span></div></div>
 
             <div class="row"><div class="tag">qkv</div>
-              <div class="body">Linear <em>3·d</em>, no bias <span class="shape">→ [B, T, 1152]</span></div></div>
+              <div class="body">Linear <em>3·d</em>, no bias <span class="shape">→ [T, 1152]</span></div></div>
 
             <div class="row"><div class="tag">split</div>
-              <div class="body">into Q · K · V <span class="shape">→ 3 × [B, T, 384]</span></div></div>
+              <div class="body">into Q · K · V <span class="shape">→ 3 × [T, 384]</span></div></div>
 
             <div class="row"><div class="tag">heads</div>
-              <div class="body">reshape · transpose <span class="shape">→ [B, 8, T, 48]</span></div></div>
+              <div class="body">reshape · transpose <span class="shape">→ [8, T, 48]</span></div></div>
 
             <div class="row"><div class="tag">attn</div>
-              <div class="body">softmax( <em>QKᵀ / √d_head</em> + mask ) · V <span class="shape">→ [B, 8, T, 48]</span></div></div>
+              <div class="body">softmax( <em>QKᵀ / √d_head</em> + mask ) · V <span class="shape">→ [8, T, 48]</span></div></div>
 
             <div class="row"><div class="tag">proj</div>
-              <div class="body">concat · Linear <span class="shape">→ [B, T, 384]</span></div></div>
+              <div class="body">concat · Linear <span class="shape">→ [T, 384]</span></div></div>
 
             <div class="row"><div class="tag res">⊕</div>
               <div class="body">residual: x = x + attn(ln1(x))</div></div>
@@ -782,7 +1105,7 @@
               <div class="body">LayerNorm</div></div>
 
             <div class="row"><div class="tag">ffn</div>
-              <div class="body">Linear d → 4d · GELU · Linear 4d → d <span class="shape">[B, T, 1536] → [B, T, 384]</span></div></div>
+              <div class="body">Linear d → 4d · GELU · Linear 4d → d <span class="shape">[T, 1536] → [T, 384]</span></div></div>
 
             <div class="row"><div class="tag res">⊕</div>
               <div class="body">residual: x = x + ffn(ln2(x))</div></div>
@@ -794,7 +1117,7 @@
             <!-- QKV schematic -->
             <div class="mask-card" style="margin-bottom: 18px;">
               <h3>Fused QKV → 8 heads</h3>
-              <p class="lede">A single <code style="font-family:var(--mono);color:var(--accent)">Linear(d, 3d)</code> projects the hidden state, then <code style="font-family:var(--mono);color:var(--accent)">mx.split</code> peels off Q, K, V and reshapes to <code style="font-family:var(--mono);color:var(--accent)">[B, 8, T, 48]</code>.</p>
+              <p class="lede">A single <code style="font-family:var(--mono);color:var(--accent)">Linear(d, 3d)</code> projects the hidden state, then <code style="font-family:var(--mono);color:var(--accent)">mx.split</code> peels off Q, K, V and reshapes to <code style="font-family:var(--mono);color:var(--accent)">[8, T, 48]</code>.</p>
 
               <svg viewBox="0 0 360 130" class="mask-grid" aria-label="fused QKV diagram">
                 <defs>
@@ -806,7 +1129,7 @@
                 <!-- x box -->
                 <rect x="6" y="50" width="60" height="30" fill="none" stroke="#14140e" stroke-width="1.2"/>
                 <text x="36" y="69" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="11" fill="#14140e">x · d</text>
-                <text x="36" y="40" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="9" fill="#5a5a4d" letter-spacing="0.1em">[B,T,384]</text>
+                <text x="36" y="40" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="9" fill="#5a5a4d" letter-spacing="0.1em">[T, 384]</text>
 
                 <!-- linear box -->
                 <rect x="98" y="44" width="86" height="42" fill="#efe8d8" stroke="#c4441f" stroke-width="1.4"/>
@@ -830,9 +1153,9 @@
                 <text x="244" y="24" font-family="Iowan Old Style, Georgia, serif" font-style="italic" font-size="13" fill="#14140e">Q</text>
                 <text x="244" y="69" font-family="Iowan Old Style, Georgia, serif" font-style="italic" font-size="13" fill="#14140e">K</text>
                 <text x="244" y="114" font-family="Iowan Old Style, Georgia, serif" font-style="italic" font-size="13" fill="#14140e">V</text>
-                <text x="346" y="24"  text-anchor="end" font-family="JetBrains Mono, monospace" font-size="10" fill="#5a5a4d">[B,8,T,48]</text>
-                <text x="346" y="69"  text-anchor="end" font-family="JetBrains Mono, monospace" font-size="10" fill="#5a5a4d">[B,8,T,48]</text>
-                <text x="346" y="114" text-anchor="end" font-family="JetBrains Mono, monospace" font-size="10" fill="#5a5a4d">[B,8,T,48]</text>
+                <text x="346" y="24"  text-anchor="end" font-family="JetBrains Mono, monospace" font-size="10" fill="#5a5a4d">[8, T, 48]</text>
+                <text x="346" y="69"  text-anchor="end" font-family="JetBrains Mono, monospace" font-size="10" fill="#5a5a4d">[8, T, 48]</text>
+                <text x="346" y="114" text-anchor="end" font-family="JetBrains Mono, monospace" font-size="10" fill="#5a5a4d">[8, T, 48]</text>
 
                 <!-- flow tick -->
                 <circle class="qkv-flow" cx="80" cy="65" r="3.5" fill="#c4441f">
@@ -895,6 +1218,57 @@
       <span class="n">N · 04</span>
       <h4>bf16 + lazy eval</h4>
       <p>Parameters live in <code>bfloat16</code>; the loss is cast to <code>float32</code> for log-softmax stability. <code>mx.compile</code> fuses fwd/bwd/AdamW into one graph; <code>mx.eval</code> forces materialisation.</p>
+    </div>
+  </section>
+
+  <!-- ===================== PARAMETER BUDGET ===================== -->
+  <div class="strip">
+    <span><span class="num">§ 04 ·</span> Parameter budget</span>
+    <hr/>
+    <span class="num">30,035,328 total · counted by tree_flatten</span>
+  </div>
+
+  <section class="budget" aria-label="parameter count">
+    <div class="budget-grid">
+
+      <!-- headline -->
+      <div class="budget-head">
+        <div class="big-num">30.0<span class="m"> M</span></div>
+        <div class="big-sub">trainable parameters · stored in bf16</div>
+        <p class="np">
+          Only <b>10.6 M</b> of those live inside the 6 transformer blocks.
+          The rest is the <code>tok_emb</code> matrix
+          (<b>V · d</b> = 50,257 × 384 ≈ 19.3 M), which the LM head also
+          reuses — tying saves another ~19 M.
+        </p>
+      </div>
+
+      <!-- bars -->
+      <div class="budget-bars">
+        <div class="dh">Where the weights live</div>
+        <ul class="bars">
+          <li>
+            <span class="bl">embeddings</span>
+            <span class="bb"><span class="bf" style="width:64.6%"></span></span>
+            <span class="bv">19.4 M · 65 %</span>
+          </li>
+          <li>
+            <span class="bl">FFN × 6</span>
+            <span class="bb"><span class="bf" style="width:23.6%"></span></span>
+            <span class="bv">7.1 M · 24 %</span>
+          </li>
+          <li>
+            <span class="bl">attention × 6</span>
+            <span class="bb"><span class="bf" style="width:11.8%"></span></span>
+            <span class="bv">3.5 M · 12 %</span>
+          </li>
+          <li>
+            <span class="bl">LayerNorms</span>
+            <span class="bb"><span class="bf" style="width:0.04%; min-width:2px"></span></span>
+            <span class="bv">~11 K · &lt; 0.1 %</span>
+          </li>
+        </ul>
+      </div>
     </div>
   </section>
 
